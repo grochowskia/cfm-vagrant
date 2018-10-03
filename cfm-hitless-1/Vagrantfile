@@ -1,0 +1,339 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+UUID = "fab2"
+
+#############################################################################
+## Define port mapping to build the Fabric Connections:                      #
+#### vQFX => {UUID}_seg<mapping_number>                                      #
+## So for example, vQFX1 creates internal networks fab2_seg1, fab2_seg2, etc #
+## vQFX2 creates fab2_seg1 and fab2_seg5.
+## vQFX2 is therefore connected to vQFX1 via fab_seg1
+##############################################################################
+spine_list = [1,4]
+leaf_list = [2,3,5,6]
+
+spine_port_map = {  1 => [1,2,3,4,9],
+                    4 => [7,8,5,6,9]}
+
+leaf_port_map  = {  2 => [1,5],
+                    3 => [2,6],
+                    5 => [3,7],
+                    6 => [4,8]}
+
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+    config.ssh.insert_key = false
+
+   ######################################################################################################################################
+   # vQFX1 is a spine connected to vQFX2, vQFX3, vQFX5, vQFX6, vQFX4 via xe-0/0/0, xe-0/0/1, xe-0/0/2, xe-0/0/3, xe-0/0/4, respectively #
+   # vQFX4 is a spine connected to vQFX5, vQFX6, vQFX2, vQFX3, vQFX1 via xe-0/0/0, xe-0/0/1, xe-0/0/2, xe-0/0/3, xe-0/0/4, respectively #
+   # Both spines are connected to s-srv1 and s-srv2 via xe-0/0/5 and xe-0/0/6
+   ######################################################################################################################################
+    spine_list.each do |id|
+        re_name  = ( "vqfx" + id.to_s ).to_sym
+        pfe_name = ( "vqfx" + id.to_s + "-pfe" ).to_sym
+
+        ##############################
+        ## Packet Forwarding Engine ##
+        ##############################
+        config.vm.define pfe_name do |vqfxpfe|
+            vqfxpfe.ssh.insert_key = false
+            vqfxpfe.vm.box = 'juniper/vqfx10k-pfe'
+            vqfxpfe.vm.boot_timeout = 1200
+
+            # DO NOT REMOVE / NO VMtools installed ttt
+            vqfxpfe.vm.synced_folder '.',
+                '/vagrant', disabled: true
+
+            # Internal em1 port to RE
+            vqfxpfe.vm.network 'private_network',
+                auto_config: false,
+                nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_internal"
+
+            # In case you have limited resources, you can limit the CPU used per vqfx-pfe VM, usually 50% is good
+            #vqfxpfe.vm.provider "virtualbox" do |v|
+            #   v.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+            #end
+        end
+
+        ##########################
+        ## Routing Engine  #######
+        ##########################
+        config.vm.define re_name do |vqfx|
+            vqfx.vm.hostname = "s-vqfx#{id}"
+            vqfx.vm.box = 'juniper/vqfx10k-re'
+            vqfx.vm.boot_timeout = 1200
+
+            # DO NOT REMOVE / NO VMtools installed
+            vqfx.vm.synced_folder '.',
+                '/vagrant', disabled: true
+
+            # Internal em1 port to PFE
+            vqfx.vm.network 'private_network',
+                auto_config: false,
+                nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_internal"
+
+            # Unused em2 port we need to exclude
+            vqfx.vm.network 'private_network',
+                auto_config: false, nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_reserved-bridge"
+
+            # xe-0/0/0 - xe-0/0/4
+            (0..4).each do |seg_id|
+                vqfx.vm.network 'private_network',
+                    auto_config: false,
+                    nic_type: '82540EM',
+                    virtualbox__intnet: "#{UUID}_seg#{spine_port_map[id][seg_id]}"
+            end
+            # xe-0/0/5 - xe-0/0/6
+            (1..2).each do |seg_id|
+               vqfx.vm.network 'private_network',
+                auto_config: false,
+                nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_seg#{seg_id}"
+            end
+        end
+    end
+
+
+   #############################################################################################################################
+   # vQFX2, vQFX3, vQFX5, vQFX6 are a leafs connected to vQFX1, vQFX4 via xe-0/0/0, xe-0/0/1, respectively                     #
+   # vQFX2, vQFX3, vQFX5, vQFX6 are connected via xe-0/0/2 to leaf-srv2, leaf-srv3, leaf-srv5, leaf-srv6, respectively         #
+   # vQFX2 and vQFX3 are connected to bms1 via xe-0/0/3 while vQFX5 and vQFX6 are connected to bms4 via xe-0/0/3               #
+   #############################################################################################################################
+    leaf_list.each do |id|
+        re_name  = ( "vqfx" + id.to_s ).to_sym
+        pfe_name = ( "vqfx" + id.to_s + "-pfe" ).to_sym
+
+        ##############################
+        ## Packet Forwarding Engine ##
+        ##############################
+        config.vm.define pfe_name do |vqfxpfe|
+            vqfxpfe.ssh.insert_key = false
+            vqfxpfe.vm.box = 'juniper/vqfx10k-pfe'
+            vqfxpfe.vm.boot_timeout = 1200
+
+            # DO NOT REMOVE / NO VMtools installed ttt
+            vqfxpfe.vm.synced_folder '.',
+                '/vagrant', disabled: true
+
+            # Internal em1 port to RE
+            vqfxpfe.vm.network 'private_network',
+                auto_config: false,
+                nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_internal"
+
+            # In case you have limited resources, you can limit the CPU used per vqfx-pfe VM, usually 50% is good
+            #vqfxpfe.vm.provider "virtualbox" do |v|
+            #   v.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+            #end
+        end
+
+        ##########################
+        ## Routing Engine  #######
+        ##########################
+        config.vm.define re_name do |vqfx|
+            vqfx.vm.hostname = "l-vqfx#{id}"
+            vqfx.vm.box = 'juniper/vqfx10k-re'
+            vqfx.vm.boot_timeout = 1200
+
+            # DO NOT REMOVE / NO VMtools installed
+            vqfx.vm.synced_folder '.',
+                '/vagrant', disabled: true
+
+            # Internal em1 port to PFE
+            vqfx.vm.network 'private_network',
+                auto_config: false,
+                nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_internal"
+
+            # Unused em2 port we need to exclude
+            vqfx.vm.network 'private_network',
+                auto_config: false, nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_reserved-bridge"
+
+            # xe-0/0/0 - xe-0/0/1
+            (0..1).each do |seg_id|
+                vqfx.vm.network 'private_network',
+                    auto_config: false,
+                    nic_type: '82540EM',
+                    virtualbox__intnet: "#{UUID}_seg#{leaf_port_map[id][seg_id]}"
+            end
+            # xe-0/0/2 - xe-0/0/3
+            (1..2).each do |seg_id|
+               vqfx.vm.network 'private_network',
+                auto_config: false,
+                nic_type: '82540EM',
+                virtualbox__intnet: "#{UUID}_vqfx#{id}_seg#{seg_id}"
+            end
+        end
+    end
+
+
+        ################################################################################################################################################
+        # Servers Connected to vQFX2/vQFX3 Leafs for OpenStack/Contrail Controller and Contrail-Command "vqfx lo0: 2.2.2.1" & GW irb.0: "172.16.1.1"   #
+        # s-srv1 node is connected to xe-0/0/5                                                                                                         #
+        # s-srv2 node is connected to xe-0/0/6                                                                                                         #
+        ################################################################################################################################################
+#        $subnet_s_mgmt = "192.168.3"
+#        $subnet_s_ctrl_data= "172.16.1"
+#            (1..2).each do |s_id|
+#              srv_name = ( "s-srv" + s_id.to_s ).to_sym
+#                config.vm.define srv_name do |srv|
+#                    srv.vm.box = "qarham/CentOS7.5-350GB"
+#                    srv.vm.hostname = "s-srv#{s_id}"
+#                    srv.vm.network 'private_network',
+#                       ip:"#{$subnet_s_mgmt}.#{s_id+9}",
+#                       netmask:"255.255.255.128"
+#                    srv.vm.network 'private_network',
+#                      ip: "#{$subnet_s_ctrl_data}.#{s_id+100}",
+#                      nic_type: '82540EM',
+#                      virtualbox__intnet: "#{UUID}_vqfx1_seg#{s_id}"
+#                    srv.vm.network 'private_network',
+#                      ip: "#{$subnet_s_ctrl_data}.#{s_id+100}",
+#                      nic_type: '82540EM',
+#                      virtualbox__intnet: "#{UUID}_vqfx4_seg#{s_id}"
+#                    srv.ssh.insert_key = true
+#                    srv.vm.provision "shell", path: "scripts/enable_root_login.sh"
+#                    srv.vm.provision "shell", path: "scripts/static-routes-s1-server.sh"
+#                    srv.vm.provision "shell", path: "scripts/lldp.sh"
+#                    srv.vm.provision "shell", path: "scripts/dns-conf.sh"
+#                config.vm.provider :virtualbox do |vb|
+#                    vb.auto_nat_dns_proxy = false
+##                     vb.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
+##                     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+#                    vb.customize ["modifyvm", :id, "--memory", "32768", "--cpus", "8"]
+#                end
+#            end
+#        end
+
+        ######################################################################################################################################
+        ## Each leaf vQFX has one leaf-srv node connected to xe-0/0/2                                                                                              #
+        ######################################################################################################################################
+#        $subnet_s_mgmt = "192.168.3"
+#        $subnet_l1_ctrl_data= "172.16"
+#            leaf_list.each do |id|
+#              srv_name = ( "leaf-srv" + id.to_s ).to_sym
+#                config.vm.define srv_name do |srv|
+#                    srv.vm.box = "qarham/CentOS7.5-350GB"
+#                    srv.vm.hostname = "leaf-srv#{id}"
+#                    srv.vm.network 'private_network',
+#                       ip:"#{$subnet_s_mgmt}.#{id+11}",
+#                       netmask:"255.255.255.128"
+#                    srv.vm.network 'private_network',
+#                      ip: "#{$subnet_l1_ctrl_data}.#{id}.#{id+100}",
+#                      nic_type: '82540EM',
+#                      virtualbox__intnet: "#{UUID}_vqfx#{id}_seg1"
+#                    srv.ssh.insert_key = true
+#                    srv.vm.provision "shell", path: "scripts/enable_root_login.sh"
+#                    srv.vm.provision "shell", path: "scripts/static-routes-l#{id}-server.sh"
+#                    srv.vm.provision "shell", path: "scripts/lldp.sh"
+#                    srv.vm.provision "shell", path: "scripts/dns-conf.sh"
+#                config.vm.provider :virtualbox do |vb|
+#                    vb.auto_nat_dns_proxy = false
+##                     vb.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
+##                     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+#                    vb.customize ["modifyvm", :id, "--memory", "32768", "--cpus", "4"]
+#                end
+#            end
+#        end
+
+        #####################################################################################################################
+        ## Two BMS servers are multi-homed to a pair of leafs. These are used for Contrail command and Contrail controller. #
+        #  These are used for Contrail command and Contrail controller	                                                    #
+        #  bms1 is connected to vQFX2 and vQFX3 while bms4 is connected to vQFX5 and vQFX6                                  #
+        #####################################################################################################################
+        $subnet_s_mgmt = "192.168.3"
+        $subnet_bms_ctrl_data= "172.16"
+            spine_list.each do |s_id|
+              srv_name = ( "cc" + s_id.to_s ).to_sym
+                config.vm.define srv_name do |srv|
+                    srv.vm.box = "qarham/CentOS7.5-350GB"
+                    srv.vm.hostname = "cc#{s_id}"
+                    srv.vm.network 'private_network',
+                       ip:"#{$subnet_s_mgmt}.#{s_id+21}",
+                       netmask:"255.255.255.128"
+                    srv.vm.network 'private_network',
+                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+1}.#{s_id+110}",
+                      nic_type: '82540EM',
+                      virtualbox__intnet: "#{UUID}_vqfx#{s_id+1}_seg1"
+                    srv.vm.network 'private_network',
+                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+1}.#{s_id+110}",
+                      nic_type: '82540EM',
+                      virtualbox__intnet: "#{UUID}_vqfx#{s_id+2}_seg1"
+                    srv.ssh.insert_key = true
+                    srv.vm.provision "shell", path: "scripts/enable_root_login.sh"
+                    srv.vm.provision "shell", path: "scripts/static-routes-l#{s_id+1}-server.sh"
+                    srv.vm.provision "shell", path: "scripts/lldp.sh"
+                    srv.vm.provision "shell", path: "scripts/dns-conf.sh"
+                config.vm.provider :virtualbox do |vb|
+                    vb.auto_nat_dns_proxy = false
+#                     vb.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
+#                     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+                    vb.customize ["modifyvm", :id, "--memory", "32768", "--cpus", "8"]
+                end
+            end
+        end
+
+
+        #######################################################################################################
+        ## Two BMS servers are multi-homed to a pair of leafs                                                                             #
+        #  bms1 is connected to vQFX2 and vQFX3 while bms4 is connected to vQFX5 and vQFX6                    #
+        #######################################################################################################
+        $subnet_s_mgmt = "192.168.3"
+        $subnet_bms_ctrl_data= "172.16"
+            spine_list.each do |s_id|
+              srv_name = ( "bms" + s_id.to_s ).to_sym
+                config.vm.define srv_name do |srv|
+                    srv.vm.box = "qarham/CentOS7.5-350GB"
+                    srv.vm.hostname = "bms#{s_id}"
+                    srv.vm.network 'private_network',
+                       ip:"#{$subnet_s_mgmt}.#{s_id+11}",
+                       netmask:"255.255.255.128"
+                    srv.vm.network 'private_network',
+                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+1}.#{s_id+100}",
+                      nic_type: '82540EM',
+                      virtualbox__intnet: "#{UUID}_vqfx#{s_id+1}_seg2"
+                    srv.vm.network 'private_network',
+                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+1}.#{s_id+100}",
+                      nic_type: '82540EM',
+                      virtualbox__intnet: "#{UUID}_vqfx#{s_id+2}_seg2"
+                    srv.ssh.insert_key = true
+                    srv.vm.provision "shell", path: "scripts/enable_root_login.sh"
+                    srv.vm.provision "shell", path: "scripts/static-routes-l#{s_id+1}-server.sh"
+                    srv.vm.provision "shell", path: "scripts/lldp.sh"
+                    srv.vm.provision "shell", path: "scripts/dns-conf.sh"
+                config.vm.provider :virtualbox do |vb|
+                    vb.auto_nat_dns_proxy = false
+#                     vb.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
+#                     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+                    vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "2"]
+                end
+            end
+        end
+
+
+
+    ##############################
+    ## Box provisioning        ###
+    ## exclude Windows host    ###
+    ##############################
+    if !Vagrant::Util::Platform.windows?
+        config.vm.provision "ansible" do |ansible|
+            ansible.groups = {
+                "vqfx10k" => ["vqfx1", "vqfx2", "vqfx3", "vqfx4", "vqfx5", "vqfx6" ],
+                "vqfx10k-pfe"  => ["vqfx1-pfe", "vqfx2-pfe", "vqfx3-pfe", "vqfx4-pfe", "vqfx5-pfe", "vqfx6-pfe"],
+                "all:children" => ["vqfx10k", "vqfx10k-pfe"]
+            }
+            ansible.playbook = "pb.conf.all.commit.yaml"
+        end
+    end
+end
+

@@ -1,0 +1,52 @@
+interfaces:
+    - name: xe-0/0/5
+      description: "connect s-srv1"
+      vlan_id: 1
+    - name: xe-0/0/6
+      description: "connect s-srv2"
+      vlan_id: 1
+
+inet_interfaces:
+    - name: xe-0/0/0
+      ip: 10.0.2.1/30
+      description: "connect to vqfx5 leaf"
+    - name: xe-0/0/1
+      ip: 10.0.3.1/30
+      description: "connect to vqfx6 leaf"
+    - name: xe-0/0/2
+      ip: 10.0.4.1/30
+      description: "connect to vqfx2 leaf"
+    - name: xe-0/0/3
+      ip: 10.0.5.1/30
+      description: "connect to vqfx3 leaf"
+    - name: xe-0/0/4
+      ip: 10.0.8.2/30
+      description: "connect to vqfx1 spine"
+    - name: irb
+      description: "vRouter gateway for spine srvs"
+      ip: 172.16.4.1/24
+    - name: lo0
+      description: "vqfx Loopback"
+      ip: 2.2.2.4/32
+
+router_id: 2.2.2.4
+overlay_asn: 64512
+local_as: 64602
+local_address: 2.2.2.4
+
+peers:
+    - name: leaf5
+      neighbor: 10.0.2.2
+      peer_as: 64503
+    - name: leaf6
+      neighbor: 10.0.3.2
+      peer_as: 64504
+    - name: leaf2
+      neighbor: 10.0.4.2
+      peer_as: 64501
+    - name: leaf3
+      neighbor: 10.0.5.2
+      peer_as: 64502
+    - name: spine4
+      neighbor: 10.0.8.1
+      peer_as: 64601

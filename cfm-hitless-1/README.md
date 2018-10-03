@@ -1,5 +1,5 @@
 ***
-This Vagrantfile will spawn 2 instances of VQFX (Full) each with 1 Routing Engine and 1 PFE VM along with 7 nodes connected to 1x1 vQFX Fabric.
+This Vagrantfile will spawn 6 instances of VQFX (Full) each with 1 Routing Engine and 1 PFE VM, along with 4 nodes connected to 2x4 vQFX Fabric.
 
 # Topology 
 

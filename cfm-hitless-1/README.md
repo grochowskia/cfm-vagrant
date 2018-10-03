@@ -5,6 +5,7 @@ This Vagrantfile will spawn 6 instances of VQFX (Full) each with 1 Routing Engin
 
 ## High Level Topology Diagram
 
+![Web Console](images/vqfx-setup-image.png)
 
 ## Low Level Detail Topology Diagram
 

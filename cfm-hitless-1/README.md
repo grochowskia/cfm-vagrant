@@ -5,11 +5,11 @@ This Vagrantfile will spawn 2 instances of VQFX (Full) each with 1 Routing Engin
 
 ## High Level Topology Diagram
 
-![Web Console](images/cfm-1x1vQFX-Top-Overview.png)
+#![Web Console](images/cfm-1x1vQFX-Top-Overview.png)
 
 ## Low Level Detail Topology Diagram
 
-![Web Console](images/cfm-1x1vQFX-Full-Top.png)
+#![Web Console](images/cfm-1x1vQFX-Full-Top.png)
 
 # Provisioning / Configuration
 
@@ -18,7 +18,7 @@ Ansible is used to preconfigured both VQFX with an IP address on their interface
 
 # Troubleshooting Tips
 
-After installing VirtualBox on the host "vboxdrv" kernel module is required to start brining the VMs up via Vagrant. In case you see following error please reboot the host machine to make sure kernel module is loaded properly.
+After installing VirtualBox on the host "vboxdrv" kernel module is required to start bringing the VMs up via Vagrant. In case you see following error please reboot the host machine to make sure kernel module is loaded properly.
 
 
 ```bash

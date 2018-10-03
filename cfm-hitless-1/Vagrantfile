@@ -265,7 +265,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                       nic_type: '82540EM',
                       virtualbox__intnet: "#{UUID}_vqfx#{s_id+1}_seg1"
                     srv.vm.network 'private_network',
-                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+1}.#{s_id+110}",
+                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+2}.#{s_id+110}",
                       nic_type: '82540EM',
                       virtualbox__intnet: "#{UUID}_vqfx#{s_id+2}_seg1"
                     srv.ssh.insert_key = true
@@ -302,7 +302,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                       nic_type: '82540EM',
                       virtualbox__intnet: "#{UUID}_vqfx#{s_id+1}_seg2"
                     srv.vm.network 'private_network',
-                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+1}.#{s_id+100}",
+                      ip: "#{$subnet_bms_ctrl_data}.#{s_id+2}.#{s_id+100}",
                       nic_type: '82540EM',
                       virtualbox__intnet: "#{UUID}_vqfx#{s_id+2}_seg2"
                     srv.ssh.insert_key = true

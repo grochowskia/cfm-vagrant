@@ -26,11 +26,11 @@ fab-server# vboxmanage showvminfo cfm-hitless-1_bms1_1538516534167_5794
 
 (NIC 3:           MAC: 080027BE92D2, Attachment: Internal Network ‘fab2_vqfx2_seg2')
 
-fab-server# vboxmanage modifyvm cfm-hitless-1_bms1_1538516534167_5794 --nictrace3 on --nictracefile3 trace3.pcap
+fab-server# vboxmanage modifyvm cfm-hitless-1_bms1_1538516534167_5794 --nictrace3 on --nictracefile3 /tmp/trace3.pcap
 
 fab-server# vagrant resume bms1
 
-fab-server# tcpdump -ttttnnr trace3.pcap
+fab-server# tcpdump -ttttnnr /tmp/trace3.pcap
 ```
 
 

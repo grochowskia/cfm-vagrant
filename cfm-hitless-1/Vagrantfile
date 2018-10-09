@@ -252,7 +252,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         # NOTE: DISABLE MULTI-HOMING FOR NOW                                                                                #
         #####################################################################################################################
         $subnet_s_mgmt = "192.168.3"
-        $subnet_bms_ctrl_data= "172.16.5"
+        $subnet_bms_ctrl_data= "172.16"
             (1..2).each do |l_id|
               srv_name = ( "cc" + l_id.to_s ).to_sym
                 config.vm.define srv_name do |srv|
@@ -262,7 +262,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                        ip:"#{$subnet_s_mgmt}.#{l_id+21}",
                        netmask:"255.255.255.128"
                     srv.vm.network 'private_network',
-                      ip: "#{$subnet_bms_ctrl_data}.#{l_id+110}",
+                      ip: "#{$subnet_bms_ctrl_data}.5.#{l_id+110}",
                       nic_type: '82540EM',
                       virtualbox__intnet: "#{UUID}_vqfx5_seg#{l_id+1}"
                     srv.ssh.insert_key = true

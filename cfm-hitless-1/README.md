@@ -31,6 +31,10 @@ fab-server# vboxmanage modifyvm cfm-hitless-1_bms1_1538516534167_5794 --nictrace
 fab-server# vagrant resume bms1
 
 fab-server# tcpdump -ttttnnr /tmp/trace3.pcap
+
+When done, don't forget to turn tracing off or your pcap file will get very large and fill up your disk!
+
+fab-server# vboxmanage modifyvm cfm-hitless-1_bms1_1538516534167_5794 --nictrace3 off
 ```
 
 

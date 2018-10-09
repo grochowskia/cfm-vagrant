@@ -1,9 +1,12 @@
 interfaces:
     - name: xe-0/0/2
-      description: "connect cc2"
+      description: "connect bms4"
       vlan_id: 1
     - name: xe-0/0/3
-      description: "connect bms1"
+      description: "connect cc1"
+      vlan_id: 1
+    - name: xe-0/0/4
+      description: "connect cc2"
       vlan_id: 1
 
 inet_interfaces:

@@ -1,8 +1,5 @@
 interfaces:
     - name: xe-0/0/2
-      description: "connect cc1"
-      vlan_id: 1
-    - name: xe-0/0/3
       description: "connect bms1"
       vlan_id: 1
 

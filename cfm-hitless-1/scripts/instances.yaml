@@ -1,15 +1,15 @@
 global_configuration:
-  CONTAINER_REGISTRY: 10.84.5.81:5010
+  CONTAINER_REGISTRY: ci-repo.englab.juniper.net:5000
   REGISTRY_PRIVATE_INSECURE: True
 provider_config:
   bms:
     ssh_user: root
     ssh_pwd: c0ntrail123
-    ntpserver: 172.21.200.60
+    ntpserver: ntp.juniper.net
     domainsuffix: local
 instances:
-  s-srv2:
-    ip: 192.168.2.11
+  cc2:
+    ip: 192.168.3.23
     provider: bms
     roles:
       config:
@@ -22,49 +22,31 @@ instances:
       openstack_network:
       openstack_storage:
       openstack_monitoring:
-  l-srv2:
-    ip: 192.168.2.14
+  vr6:
+    ip: 192.168.3.17
     provider: bms
     roles:
       vrouter:
         VROUTER_GATEWAY: 172.16.2.1
-      openstack_compute:
-  l-srv1:
-    ip: 192.168.2.13
-    provider: bms
-    roles:
-      vrouter:
-        VROUTER_GATEWAY: 172.16.2.1
-      openstack_compute:
-  s-srv3:
-    ip: 192.168.2.12
-    provider: bms
-    roles:
       vrouter:
         TSN_EVPN_MODE: true
-        VROUTER_GATEWAY: 172.16.1.1
+        VROUTER_GATEWAY: 172.16.2.1
+      openstack_compute:
 contrail_configuration:
-  CONTRAIL_VERSION: ocata-5.0-154
+  CONTRAIL_VERSION: 5.0-284
   CLOUD_ORCHESTRATOR: openstack
   RABBITMQ_NODE_PORT: 5673
   VROUTER_GATEWAY: 172.16.2.1
   ENCAP_PRIORITY: VXLAN,MPLSoUDP,MPLSoGRE
   AUTH_MODE: keystone
-  KEYSTONE_AUTH_HOST: 192.168.2.11
+  KEYSTONE_AUTH_HOST: 192.168.3.23
   KEYSTONE_AUTH_URL_VERSION: /v3
-  CONTROLLER_NODES: 192.168.2.11
-  CONTROL_NODES: 172.16.1.102
-  TSN_NODES: 172.16.1.103
+  CONTROLLER_NODES: 192.168.3.23
+  CONTROL_NODES: 172.16.5.112
+  TSN_NODES: 172.16.6.106
+  OPENSTACK_VERSION: queens
 kolla_config:
-  customize:
-    nova.conf: |
-      [libvirt]
-      virt_type=qemu
-      cpu_mode=none
   kolla_globals:
-    openstack_release: ocata
     enable_haproxy: no
-    enable_ironic: no
-    enable_swift: no
   kolla_passwords:
     keystone_admin_password: contrail123

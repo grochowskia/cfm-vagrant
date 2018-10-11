@@ -10,7 +10,103 @@ This Vagrantfile will spawn 6 instances of VQFX (Full) each with 1 Routing Engin
 
 # Provisioning / Configuration
 
-Ansible is used to preconfigured both VQFX with an IP address on their interfaces
+```bash
+curl -i -k \
+ -H "Content-Type: application/json" \
+ -d '
+{ "auth": {
+   "identity": {
+     "methods": ["password"],
+     "password": {
+       "user": {
+         "name": "admin",
+         "domain": { "id": "default" },
+         "password": "contrail123"
+       }
+     }
+   },
+   "scope": {
+     "project": {
+       "name": "admin",
+       "domain": { "id": "default" }
+     }
+   }
+ }
+}' \
+ "https://localhost:9091/keystone/v3/auth/tokens" ; echo
+
+curl --insecure \
+  https://192.168.3.22:9091/contrail-clusters \
+  -H 'Content-Type: application/json' \
+  -H 'x-auth-token: 91350335-5b7b-4b21-b6a2-862f42ac541a' 
+
+
+curl --insecure -X PUT \
+  https://192.168.3.22:9091/contrail-cluster/92f8821a-22b7-45d5-97ce-9449fbe8d3d6 \
+  -H 'Content-Type: application/json' \
+  -H 'x-auth-token: 91350335-5b7b-4b21-b6a2-862f42ac541a' \
+  -d '{
+    "contrail-cluster": {
+        "provisioning_state": "CREATED",
+        "uuid": "92f8821a-22b7-45d5-97ce-9449fbe8d3d6"
+    }
+}'
+```
+
+## Provisioning Cluster via CLI
+Instead of provisioning the Contrail cluster servers via Contrail Command, here is how to do it using the CLI.
+
+Use the instances.yml checked into the scripts directory, and store it somewhere in the contrail_command docker.
+
+In this example, we stored it in /var/tmp/contrail_cluster/test1/instances.yml
+```bash
+# ssh into Contrail command VM
+cd ~/cfm-vagrant/cfm-hitless
+vagrant ssh cc1
+
+# Get into contrail_command docker
+sudo su
+docker exec -it contrail_command bash
+
+cd /usr/share/contrail/contrail-ansible-deployer
+
+# For manual instances Installation use following command
+ansible-playbook -i inventory/ -e orchestrator=openstack -e config_file=/var/tmp/contrail_cluster/test1/instances.yml playbooks/configure_instances.yml
+
+# For manual OpenStack Installation use following command
+ansible-playbook -i inventory/ -e orchestrator=openstack -e config_file=/var/tmp/contrail_cluster/test1/instances.yml playbooks/install_openstack.yml
+
+# For manual Contrail Installation use following command
+ansible-playbook -i inventory/ -e orchestrator=openstack -e config_file=/var/tmp/contrail_cluster/test1/instances.yml playbooks/install_contrail.yml
+```
+
+## Create New Contrail Command and Import Settings
+If Contrail Command does not properly display settings after manually deploying above, 
+
+here is how to create a new instance of Contrail Command and import settings.
+
+In this example, we copied instances.yml and command_servers.yml from the repo scrips directory into /tmp in the Contrail Command VM.
+
+Note that this will create a new docker called contrail_command_deployers, which in turn creates the contrail_command and contrail_mysql dockers.
+
+When done, the contrail_command_deployers docker is removed.
+
+```bash
+# ssh into Contrail Command VM
+cd ~/cfm-vagrant/cfm-hitless
+vagrant ssh cc1
+
+# First remove the existing contrail command dockers
+docker rm -f contrail_command
+docker rm -f contrail_mysql
+
+export CCD_IMAGE=ci-repo.englab.juniper.net:5010/contrail-command-deployer:5.0-284
+export COMMAND_SERVERS_FILE=/tmp/command_servers.yml
+export INSTANCES_FILE=/tmp/instances.yml
+
+docker run -t --net host -e orchestrator=openstack -e action=import_cluster -v $COMMAND_SERVERS_FILE:/command_servers.yml -v $INSTANCES_FILE:/instances.yml -d --privileged --name contrail_command_deployer $CCD_IMAGE
+```
+
 
 
 # Troubleshooting Tips

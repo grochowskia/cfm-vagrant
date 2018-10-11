@@ -9,7 +9,9 @@ This Vagrantfile will spawn 6 instances of VQFX (Full) each with 1 Routing Engin
 
 
 # Provisioning / Configuration
+If provisioning Contrail clusters via UI gets stuck, 
 
+you may want to change the state of the contrail cluster so that UI goes back to a good state.
 ```bash
 curl -i -k \
  -H "Content-Type: application/json" \

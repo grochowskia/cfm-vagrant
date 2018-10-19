@@ -105,15 +105,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 #                   srv.vm.provision "shell", path: "scripts/set-centos-gw.sh"
                     srv.vm.provision "shell", path: "scripts/static-routes-s-server.sh"
                     srv.vm.provision "shell", path: "scripts/ntp.sh"
-                config.vm.provider :virtualbox do |vb|
-                    if s_id == 1 or s_id == 3
-                         vb.customize ["modifyvm", :id, "--memory", "8192", "--cpus", "2"]
-                    else
-                        vb.customize ["modifyvm", :id, "--memory", "32768", "--cpus", "4"]
-        	    end                
+                    config.vm.provider :virtualbox do |vb|
+                        if s_id == 1 or s_id == 3
+                            vb.customize ["modifyvm", :id, "--memory", "8192", "--cpus", "2"]
+                        else
+                            vb.customize ["modifyvm", :id, "--memory", "32768", "--cpus", "4"]
+        	            end
+                    end
                 end
             end
-        end
 
         ######################################################################################################################################
         ## Servers Connected to vQFX2 Leaf for Compute, CSN and BMS nodes "vqfx lo0: 2.2.2.2"                                          #######

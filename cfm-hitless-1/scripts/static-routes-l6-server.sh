@@ -1,4 +1,4 @@
-sudo cat > /etc/sysconfig/network-scripts/route-eth3 <<EOF
+sudo cat > /etc/sysconfig/network-scripts/route-eth2 <<EOF
 ADDRESS0=172.16.1.0
 GATEWAY0=172.16.6.1
 NETMASK0=255.255.255.0

@@ -60,6 +60,8 @@ Instead of provisioning the Contrail cluster servers via Contrail Command, here 
 
 Use the instances.yml checked into the scripts directory, and store it somewhere in the contrail_command docker.
 
+First change contrail_configuration.CONTRAIL_VERSION in instances.yml
+
 In this example, we stored it in /var/tmp/contrail_cluster/test1/instances.yml
 ```bash
 # ssh into Contrail command VM
@@ -89,6 +91,8 @@ here is how to create a new instance of Contrail Command and import settings.
 
 In this example, we copied instances.yml and command_servers.yml from the repo scrips directory into /tmp in the Contrail Command VM.
 
+Remember to change the version number in the "export CCD_IMAGE" line below.
+
 Note that this will create a new docker called contrail_command_deployers, which in turn creates the contrail_command and contrail_mysql dockers.
 
 When done, the contrail_command_deployers docker is removed.
@@ -102,7 +106,8 @@ vagrant ssh cc1
 docker rm -f contrail_command
 docker rm -f contrail_mysql
 
-export CCD_IMAGE=ci-repo.englab.juniper.net:5010/contrail-command-deployer:5.0-284
+# Remember to change the version number in the CCD_IMAGE line below as well as command_servers.server1.container_tag in command_servers.yml
+export CCD_IMAGE=ci-repo.englab.juniper.net:5010/contrail-command-deployer:5.0-294
 export COMMAND_SERVERS_FILE=/tmp/command_servers.yml
 export INSTANCES_FILE=/tmp/instances.yml
 

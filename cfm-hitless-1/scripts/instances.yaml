@@ -33,7 +33,7 @@ instances:
         VROUTER_GATEWAY: 172.16.2.1
       openstack_compute:
 contrail_configuration:
-  CONTRAIL_VERSION: 5.0-284
+  CONTRAIL_VERSION: 5.0-294
   CLOUD_ORCHESTRATOR: openstack
   RABBITMQ_NODE_PORT: 5673
   VROUTER_GATEWAY: 172.16.2.1

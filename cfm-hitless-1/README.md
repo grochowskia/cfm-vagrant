@@ -114,9 +114,32 @@ export INSTANCES_FILE=/tmp/instances.yml
 docker run -t --net host -e orchestrator=openstack -e action=import_cluster -v $COMMAND_SERVERS_FILE:/command_servers.yml -v $INSTANCES_FILE:/instances.yml -d --privileged --name contrail_command_deployer $CCD_IMAGE
 ```
 
+## BMS Multi-homing Configuration
+In order to use multihoming for BMS1 and BMS4, you will need to patch the BMS servers with the following files in the cfm-hitless-1/sample-configs directory.
+(Note that Vagrant doesn't seem to support bonding configuration from the Vagrantfile)
+- ifcfg-eth2
+- ifcfg-eth3
+- ifcfg-bond0
 
+Then do "sudo systemctl restart network" for them to take effect.
+
+Here are some useful commands for debugging on the Centos BMS:
+- cat /proc/net/bonding/bond0
+- ip address
+- ip route
+
+You must use untagged interfaces on the BMS link because the Vagrant 82540EM NIC strips off tags.
+This means the vQFXs also need to be configured with untagged interfaces on the multi-homing LAG interface.
+
+See provided sample QFX configurations in cfg-hitless-1/sample-configs for reference.
+
+NOTE: During development, I encountered some strange issues with the BMS Centos bond interfaces where LACP never got into the right state.
+After doing "vagrant destroy" and "vagrant up" on the BMS VMs, and patching with the ifcfg files, the problem went away.
+So, the moral of the story is, when in doubt destroy.
 
 # Troubleshooting Tips
+
+## Packet Sniffing
 
 Want to sniff packets on virtualbox internal network fab2_vqfx2_seg2
 
@@ -141,7 +164,7 @@ fab-server# vboxmanage modifyvm cfm-hitless-1_bms1_1538516534167_5794 --nictrace
 ```
 
 
-
+## Vbox Driver
 After installing VirtualBox on the host "vboxdrv" kernel module is required to start bringing the VMs up via Vagrant. In case you see following error please reboot the host machine to make sure kernel module is loaded properly.
 
 
@@ -164,3 +187,69 @@ WARNING: The vboxdrv kernel module is not loaded. Either there is no module
 5.2.16r123759
  ```
 
+
+## Useful Junos Commands
+Here are some useful Junos commands for debugging multi-homing.
+
+```bash
+vagrant@vqfx2> show lacp interfaces 
+Aggregated interface: ae118
+    LACP state:       Role   Exp   Def  Dist  Col  Syn  Aggr  Timeout  Activity
+      xe-0/0/2       Actor    No    No   Yes  Yes  Yes   Yes     Fast    Active
+      xe-0/0/2     Partner    No    No   Yes  Yes  Yes   Yes     Fast    Active
+    LACP protocol:        Receive State  Transmit State          Mux State 
+      xe-0/0/2                  Current   Fast periodic Collecting distributing
+ ```
+
+```bash
+vagrant@vqfx2> show ethernet-switching table 
+
+MAC flags (S - static MAC, D - dynamic MAC, L - locally learned, P - Persistent static
+           SE - statistics enabled, NM - non configured MAC, R - remote PE MAC, O - ovsdb MAC)
+
+
+Ethernet switching table : 2 entries, 2 learned
+Routing instance : default-switch
+   Vlan                MAC                 MAC      Logical                Active
+   name                address             flags    interface              source
+   bd-5                08:00:27:42:0f:c9   DR       esi.1754               00:00:00:00:08:00:27:df:77:98 
+   bd-5                08:00:27:4e:fd:73   DL       ae118.0              
+ ```
+
+```bash
+vagrant@vqfx2> show vlans 
+
+Routing instance        VLAN name             Tag          Interfaces
+default-switch          bd-5                  NA       
+                                                           ae118.0*
+                                                           esi.1753*
+                                                           esi.1754*
+                                                           vtep.32769*
+                                                           vtep.32770*
+                                                           vtep.32771*
+default-switch          default               1        
+                                                           xe-0/0/3.0*
+ ```
+
+# Random Notes
+
+- Multi-homing on this setup requires using untagged interfaces to the BMSs. In Contrail version 5.0-294 (both controller and UI) I encountered an issue
+ where I could not configured an untagged vlan on the BMS instance. The VLAN field was required and entering vlan=0 did not result in sending any config to the devices.
+ To work around this issue, I made this patch after configuring with another vlan ID:
+ 
+```bash
+delete groups __contrail_overlay_evpn_access__ interfaces ae118
+set groups __contrail_overlay_evpn_access__ interfaces ae118 flexible-vlan-tagging
+set groups __contrail_overlay_evpn_access__ interfaces ae118 native-vlan-id 4094
+set groups __contrail_overlay_evpn_access__ interfaces ae118 mtu 9192
+set groups __contrail_overlay_evpn_access__ interfaces ae118 encapsulation extended-vlan-bridge
+set groups __contrail_overlay_evpn_access__ interfaces ae118 unit 0 vlan-id 4094
+
+delete groups __contrail_overlay_evpn_access__ vlans bd-5
+set groups __contrail_overlay_evpn_access__ vlans bd-5 interface ae118.0
+set groups __contrail_overlay_evpn_access__ vlans bd-5 vxlan vni 5
+ ```
+
+- In trying to ping between bms1 and bms4, it didn't always work. "show ethernet-switching table" sometimes was missing
+a MAC entry. We think there may be a QFX bug (Junos: 18.1R1.9 limited). To work around, we tried "clear ethernet-switching table"
+as well as pinging in both directions. This seems to help.

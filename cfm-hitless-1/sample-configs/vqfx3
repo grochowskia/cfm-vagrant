@@ -1,0 +1,496 @@
+vagrant@vqfx3> show configuration
+## Last commit: 2018-10-26 18:47:47 UTC by vagrant
+version 18.1R1.9;
+groups {
+    __contrail_basic__ {
+        snmp {
+            community public {
+                authorization read-only;
+            }
+        }
+    }
+    __contrail_overlay_bgp__ {
+        routing-options {
+            router-id 2.2.2.3;
+            route-distinguisher-id 2.2.2.3;
+            autonomous-system 64512;
+            resolution {
+                rib bgp.rtarget.0 {
+                    resolution-ribs inet.0;
+                }
+            }
+        }
+        protocols {
+            bgp {
+                group _contrail_asn-64512 {
+                    type internal;
+                    local-address 2.2.2.3;
+                    hold-time 90;
+                    family evpn {
+                        signaling;
+                    }
+                    family route-target;
+                    export _contrail_ibgp_export_policy;
+                    multipath;
+                    neighbor 172.16.5.112 {
+                        peer-as 64512;
+                    }
+                    neighbor 2.2.2.6 {
+                        peer-as 64512;
+                    }
+                    neighbor 2.2.2.5 {
+                        peer-as 64512;
+                    }
+                    neighbor 2.2.2.4 {
+                        peer-as 64512;
+                    }
+                    neighbor 2.2.2.2 {
+                        peer-as 64512;
+                    }
+                    neighbor 2.2.2.1 {
+                        peer-as 64512;
+                    }
+                }
+            }
+        }
+        policy-options {
+            policy-statement _contrail_ibgp_export_policy {
+                term inet-vpn {
+                    then {
+                        next-hop self;
+                    }
+                }
+                term inet6-vpn {
+                    then {
+                        next-hop self;
+                    }
+                }
+            }
+        }
+    }
+    __contrail_overlay_evpn__ {
+        protocols {
+            evpn {
+                vni-options {
+                    vni 5 {
+                        vrf-target target:64512:8000003;
+                    }
+                }
+                encapsulation vxlan;
+                extended-vni-list all;
+            }
+        }
+        policy-options {
+            policy-statement _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-import {
+                term t1 {
+                    from community target_64512_8000003;
+                    then accept;
+                }
+            }
+            policy-statement _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-export {
+                term t1 {
+                    then {
+                        community add target_64512_8000003;
+                        accept;
+                    }
+                }
+            }
+            policy-statement import-evpn {
+                term esi-in {
+                    from community community-esi-in;
+                    then accept;
+                }
+                term default-term {
+                    then reject;
+                }
+            }
+            community target_64512_8000003 members target:64512:8000003;
+            community community-esi-in members target:64512:1;
+        }
+        switch-options {
+            vtep-source-interface lo0.0;
+            route-distinguisher 2.2.2.3:1;
+            vrf-import [ _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-import import-evpn ];
+            vrf-export _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-export;
+            vrf-target target:64512:1;
+        }
+    }
+    __contrail_overlay_evpn_access__ {
+        interfaces {
+            ae118 {
+                flexible-vlan-tagging;
+                native-vlan-id 4094;
+                mtu 9192;
+                encapsulation extended-vlan-bridge;
+                unit 0 {
+                    vlan-id 4094;
+                }
+            }
+        }
+        protocols {
+            evpn {
+                multicast-mode ingress-replication;
+            }
+        }
+        switch-options {
+            vrf-target {
+                auto;
+            }
+        }
+        vlans {
+            bd-5 {
+                interface ae118.0;
+                vxlan {
+                    vni 5;
+                }
+            }
+        }
+    }
+    __contrail_overlay_lag__;
+    __contrail_overlay_multi_homing__ {
+        chassis {
+            aggregated-devices {
+                ethernet {
+                    device-count 128;
+                }
+            }
+        }
+        interfaces {
+            ae118 {
+                esi {
+                    00:00:00:00:08:00:27:88:46:fc;
+                    all-active;
+                }
+                aggregated-ether-options {
+                    lacp {
+                        active;
+                        system-priority 100;
+                        system-id 08:00:27:88:46:fc;
+                        admin-key 1;
+                    }
+                }
+            }
+            xe-0/0/2 {
+                gigether-options {
+                    802.3ad ae118;
+                }
+            }
+        }
+    }
+    __contrail_overlay_security_group__;
+}
+apply-groups [ __contrail_basic__ __contrail_overlay_bgp__ __contrail_overlay_evpn__ __contrail_overlay_evpn_access__ __contrail_overlay_lag__ __contrail_overlay_multi_homing__ __contrail_overlay_security_group__ ];
+system {
+    host-name vqfx3;
+    root-authentication {
+        encrypted-password "$6$T5S/eGrm$dnMDQCYLMQvcgT3oSghAt4Tmt9PPpOMl4nGp.5abom7ToD1lCC4cL65qM66U8cEkaeXeF33mIsMC3Ml4enFZM."; ## SECRET-DATA
+        ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"; ## SECRET-DATA
+    }
+    login {
+        user vagrant {
+            uid 2000;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"; ## SECRET-DATA
+            }
+        }
+    }
+    services {
+        ssh {
+            root-login allow;
+        }
+        netconf {
+            ssh;
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    extensions {
+        providers {
+            juniper {
+                license-type juniper deployment-scope commercial;
+            }
+            chef {
+                license-type juniper deployment-scope commercial;
+            }
+        }
+    }
+}
+interfaces {
+    xe-0/0/0 {
+        description "connect to vqfx1";
+        unit 0 {
+            family inet {
+                address 10.0.1.2/30;
+            }
+        }
+    }
+    xe-0/0/1 {
+        description "connect to vqfx4";
+        unit 0 {
+            family inet {
+                address 10.0.5.2/30;
+            }
+        }
+    }
+    xe-0/0/3 {
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members 1;
+                }
+            }
+        }
+    }
+    em0 {
+        unit 0 {
+            family inet {
+                dhcp;
+            }
+        }
+    }
+    em1 {
+        unit 0 {
+            family inet {
+                address 169.254.0.2/24;
+            }
+        }
+    }
+    irb {
+        description "vRouter gateway for leaf srvs";
+        unit 0 {
+            family inet {
+                address 172.16.3.1/24;
+            }
+        }
+    }
+    lo0 {
+        description "vqfx Loopback";
+        unit 0 {
+            family inet {
+                address 2.2.2.3/32;
+            }
+        }
+    }
+}
+routing-options {
+    router-id 2.2.2.3;
+    autonomous-system 64512;
+}
+protocols {
+    bgp {
+        group CLOS {
+            type external;
+            family inet {
+                unicast;
+            }
+            export export-bgp;
+            local-as 64502;
+            neighbor 10.0.1.1 {
+                peer-as 64601;
+            }
+            neighbor 10.0.5.1 {
+                peer-as 64602;
+            }
+        }
+    }
+    lldp {
+        interface all;
+    }
+}
+policy-options {
+    policy-statement MAINTENANCE-MODE {
+        term term1 {
+            from {
+                family evpn;
+                nlri-route-type [ 2 1 3 4 5 ];
+            }
+            then {
+                community add COM-MAINTENANCE;
+                accept;
+            }
+        }
+    }
+    policy-statement MAINTENANCE-MODE-underlay {
+        then {
+            as-path-prepend "9999 9999 9999";
+            accept;
+        }
+    }
+    policy-statement REJECT-MAINTENANCE-MODE {
+        term term1 {
+            from {
+                family evpn;
+                nlri-route-type [ 2 1 3 4 5 ];
+            }
+            then {
+                community add COM-MAINTENANCE;
+                reject;
+            }
+        }
+    }
+    policy-statement export-bgp {
+        term 1 {
+            from {
+                protocol [ direct local ];
+                interface [ lo0.0 irb.0 ];
+            }
+            then accept;
+        }
+        term 2 {
+            from protocol bgp;
+            then accept;
+        }
+        term 3 {
+            then reject;
+        }
+    }
+    community COM-MAINTENANCE members 9999:9999;
+}
+vlans {
+    default {
+        vlan-id 1;
+        l3-interface irb.0;
+    }
+}
+
+{master:0}
+vagrant@vqfx3> show configuration | display set
+set version 18.1R1.9
+set groups __contrail_basic__ snmp community public authorization read-only
+set groups __contrail_overlay_bgp__ routing-options router-id 2.2.2.3
+set groups __contrail_overlay_bgp__ routing-options route-distinguisher-id 2.2.2.3
+set groups __contrail_overlay_bgp__ routing-options autonomous-system 64512
+set groups __contrail_overlay_bgp__ routing-options resolution rib bgp.rtarget.0 resolution-ribs inet.0
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 type internal
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 local-address 2.2.2.3
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 hold-time 90
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 family evpn signaling
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 family route-target
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 export _contrail_ibgp_export_policy
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 multipath
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 neighbor 172.16.5.112 peer-as 64512
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 neighbor 2.2.2.6 peer-as 64512
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 neighbor 2.2.2.5 peer-as 64512
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 neighbor 2.2.2.4 peer-as 64512
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 neighbor 2.2.2.2 peer-as 64512
+set groups __contrail_overlay_bgp__ protocols bgp group _contrail_asn-64512 neighbor 2.2.2.1 peer-as 64512
+set groups __contrail_overlay_bgp__ policy-options policy-statement _contrail_ibgp_export_policy term inet-vpn then next-hop self
+set groups __contrail_overlay_bgp__ policy-options policy-statement _contrail_ibgp_export_policy term inet6-vpn then next-hop self
+set groups __contrail_overlay_evpn__ protocols evpn vni-options vni 5 vrf-target target:64512:8000003
+set groups __contrail_overlay_evpn__ protocols evpn encapsulation vxlan
+set groups __contrail_overlay_evpn__ protocols evpn extended-vni-list all
+set groups __contrail_overlay_evpn__ policy-options policy-statement _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-import term t1 from community target_64512_8000003
+set groups __contrail_overlay_evpn__ policy-options policy-statement _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-import term t1 then accept
+set groups __contrail_overlay_evpn__ policy-options policy-statement _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-export term t1 then community add target_64512_8000003
+set groups __contrail_overlay_evpn__ policy-options policy-statement _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-export term t1 then accept
+set groups __contrail_overlay_evpn__ policy-options policy-statement import-evpn term esi-in from community community-esi-in
+set groups __contrail_overlay_evpn__ policy-options policy-statement import-evpn term esi-in then accept
+set groups __contrail_overlay_evpn__ policy-options policy-statement import-evpn term default-term then reject
+set groups __contrail_overlay_evpn__ policy-options community target_64512_8000003 members target:64512:8000003
+set groups __contrail_overlay_evpn__ policy-options community community-esi-in members target:64512:1
+set groups __contrail_overlay_evpn__ switch-options vtep-source-interface lo0.0
+set groups __contrail_overlay_evpn__ switch-options route-distinguisher 2.2.2.3:1
+set groups __contrail_overlay_evpn__ switch-options vrf-import _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-import
+set groups __contrail_overlay_evpn__ switch-options vrf-import import-evpn
+set groups __contrail_overlay_evpn__ switch-options vrf-export _contrail_VirtualNetwork-1-c4f6b1a6-ed8b-4c6f-a96f-c21ca4ed351c-l2-5-export
+set groups __contrail_overlay_evpn__ switch-options vrf-target target:64512:1
+set groups __contrail_overlay_evpn_access__ interfaces ae118 flexible-vlan-tagging
+set groups __contrail_overlay_evpn_access__ interfaces ae118 native-vlan-id 4094
+set groups __contrail_overlay_evpn_access__ interfaces ae118 mtu 9192
+set groups __contrail_overlay_evpn_access__ interfaces ae118 encapsulation extended-vlan-bridge
+set groups __contrail_overlay_evpn_access__ interfaces ae118 unit 0 vlan-id 4094
+set groups __contrail_overlay_evpn_access__ protocols evpn multicast-mode ingress-replication
+set groups __contrail_overlay_evpn_access__ switch-options vrf-target auto
+set groups __contrail_overlay_evpn_access__ vlans bd-5 interface ae118.0
+set groups __contrail_overlay_evpn_access__ vlans bd-5 vxlan vni 5
+set groups __contrail_overlay_lag__
+set groups __contrail_overlay_multi_homing__ chassis aggregated-devices ethernet device-count 128
+set groups __contrail_overlay_multi_homing__ interfaces ae118 esi 00:00:00:00:08:00:27:88:46:fc
+set groups __contrail_overlay_multi_homing__ interfaces ae118 esi all-active
+set groups __contrail_overlay_multi_homing__ interfaces ae118 aggregated-ether-options lacp active
+set groups __contrail_overlay_multi_homing__ interfaces ae118 aggregated-ether-options lacp system-priority 100
+set groups __contrail_overlay_multi_homing__ interfaces ae118 aggregated-ether-options lacp system-id 08:00:27:88:46:fc
+set groups __contrail_overlay_multi_homing__ interfaces ae118 aggregated-ether-options lacp admin-key 1
+set groups __contrail_overlay_multi_homing__ interfaces xe-0/0/2 gigether-options 802.3ad ae118
+set groups __contrail_overlay_security_group__
+set apply-groups __contrail_basic__
+set apply-groups __contrail_overlay_bgp__
+set apply-groups __contrail_overlay_evpn__
+set apply-groups __contrail_overlay_evpn_access__
+set apply-groups __contrail_overlay_lag__
+set apply-groups __contrail_overlay_multi_homing__
+set apply-groups __contrail_overlay_security_group__
+set system host-name vqfx3
+set system root-authentication encrypted-password "$6$T5S/eGrm$dnMDQCYLMQvcgT3oSghAt4Tmt9PPpOMl4nGp.5abom7ToD1lCC4cL65qM66U8cEkaeXeF33mIsMC3Ml4enFZM."
+set system root-authentication ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"
+set system login user vagrant uid 2000
+set system login user vagrant class super-user
+set system login user vagrant authentication ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"
+set system services ssh root-login allow
+set system services netconf ssh
+set system syslog user * any emergency
+set system syslog file messages any notice
+set system syslog file messages authorization info
+set system syslog file interactive-commands interactive-commands any
+set system extensions providers juniper license-type juniper deployment-scope commercial
+set system extensions providers chef license-type juniper deployment-scope commercial
+set interfaces xe-0/0/0 description "connect to vqfx1"
+set interfaces xe-0/0/0 unit 0 family inet address 10.0.1.2/30
+set interfaces xe-0/0/1 description "connect to vqfx4"
+set interfaces xe-0/0/1 unit 0 family inet address 10.0.5.2/30
+set interfaces xe-0/0/3 unit 0 family ethernet-switching vlan members 1
+set interfaces em0 unit 0 family inet dhcp
+set interfaces em1 unit 0 family inet address 169.254.0.2/24
+set interfaces irb description "vRouter gateway for leaf srvs"
+set interfaces irb unit 0 family inet address 172.16.3.1/24
+set interfaces lo0 description "vqfx Loopback"
+set interfaces lo0 unit 0 family inet address 2.2.2.3/32
+set routing-options router-id 2.2.2.3
+set routing-options autonomous-system 64512
+set protocols bgp group CLOS type external
+set protocols bgp group CLOS family inet unicast
+set protocols bgp group CLOS export export-bgp
+set protocols bgp group CLOS local-as 64502
+set protocols bgp group CLOS neighbor 10.0.1.1 peer-as 64601
+set protocols bgp group CLOS neighbor 10.0.5.1 peer-as 64602
+set protocols lldp interface all
+set policy-options policy-statement MAINTENANCE-MODE term term1 from family evpn
+set policy-options policy-statement MAINTENANCE-MODE term term1 from nlri-route-type 2
+set policy-options policy-statement MAINTENANCE-MODE term term1 from nlri-route-type 1
+set policy-options policy-statement MAINTENANCE-MODE term term1 from nlri-route-type 3
+set policy-options policy-statement MAINTENANCE-MODE term term1 from nlri-route-type 4
+set policy-options policy-statement MAINTENANCE-MODE term term1 from nlri-route-type 5
+set policy-options policy-statement MAINTENANCE-MODE term term1 then community add COM-MAINTENANCE
+set policy-options policy-statement MAINTENANCE-MODE term term1 then accept
+set policy-options policy-statement MAINTENANCE-MODE-underlay then as-path-prepend "9999 9999 9999"
+set policy-options policy-statement MAINTENANCE-MODE-underlay then accept
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 from family evpn
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 from nlri-route-type 2
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 from nlri-route-type 1
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 from nlri-route-type 3
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 from nlri-route-type 4
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 from nlri-route-type 5
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 then community add COM-MAINTENANCE
+set policy-options policy-statement REJECT-MAINTENANCE-MODE term term1 then reject
+set policy-options policy-statement export-bgp term 1 from protocol direct
+set policy-options policy-statement export-bgp term 1 from protocol local
+set policy-options policy-statement export-bgp term 1 from interface lo0.0
+set policy-options policy-statement export-bgp term 1 from interface irb.0
+set policy-options policy-statement export-bgp term 1 then accept
+set policy-options policy-statement export-bgp term 2 from protocol bgp
+set policy-options policy-statement export-bgp term 2 then accept
+set policy-options policy-statement export-bgp term 3 then reject
+set policy-options community COM-MAINTENANCE members 9999:9999
+set vlans default vlan-id 1
+set vlans default l3-interface irb.0

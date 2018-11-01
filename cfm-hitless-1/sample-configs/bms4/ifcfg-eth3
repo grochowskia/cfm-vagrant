@@ -6,4 +6,4 @@ ONBOOT=yes
 NM_CONTROLLED=no
 IPV6INIT=no
 MASTER=bond0
-SLAVE=none
+SLAVE=yes

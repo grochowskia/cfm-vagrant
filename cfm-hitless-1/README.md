@@ -115,14 +115,6 @@ docker run -t --net host -e orchestrator=openstack -e action=import_cluster -v $
 ```
 
 ## BMS Multi-homing Configuration
-In order to use multihoming for BMS1 and BMS4, you will need to patch the BMS servers with the following files in the cfm-hitless-1/sample-configs directory.
-(Note that Vagrant doesn't seem to support bonding configuration from the Vagrantfile)
-- ifcfg-eth2
-- ifcfg-eth3
-- ifcfg-bond0
-
-Then do "sudo systemctl restart network" for them to take effect.
-
 Here are some useful commands for debugging on the Centos BMS:
 - cat /proc/net/bonding/bond0
 - ip address
